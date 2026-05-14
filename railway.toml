@@ -1,0 +1,4 @@
+[deploy]
+startCommand = "bun server.ts"
+healthcheckPath = "/"
+healthcheckTimeout = 30

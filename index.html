@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MONITOR DIARIO</title>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            mono: ['"IBM Plex Mono"', 'Menlo', 'Consolas', 'monospace'],
+          }
+        }
+      }
+    }
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3/dist/chartjs-plugin-annotation.min.js"></script>
+  <style>
+    body{background:#f1f5f9;color:#0f172a;font-family:system-ui,sans-serif}
+    .tab-btn{padding:.5rem 1rem;font-size:.66rem;white-space:nowrap;color:#64748b;
+             border-bottom:2px solid transparent;transition:all .15s;cursor:pointer;
+             background:none;border-top:none;border-left:none;border-right:none}
+    .tab-btn:hover{color:#1e293b}
+    .tab-btn.active{color:#1e40af;border-bottom-color:#1e40af}
+    .tab-section{display:none}.tab-section.active{display:block}
+    .card{background:#fff;border-radius:.75rem;padding:1rem;position:relative;
+          box-shadow:0 1px 3px rgba(0,0,0,.07),0 1px 2px rgba(0,0,0,.04)}
+    .expand-btn,.compare-btn,.ann-btn,.export-btn{
+                position:absolute;background:white;border:1px solid #e2e8f0;
+                border-radius:.35rem;padding:.25rem .3rem;cursor:pointer;
+                color:#94a3b8;line-height:1;z-index:5;transition:all .15s}
+    .expand-btn:hover,.compare-btn:hover,.ann-btn:hover,.export-btn:hover{
+                background:#f1f5f9;color:#1e293b;border-color:#cbd5e1}
+    .expand-btn {top:.55rem; right:2.15rem}
+    .compare-btn{top:.55rem; right:.55rem}
+    .ann-btn    {top:2.1rem; right:2.15rem}
+    .export-btn {top:2.1rem; right:.55rem}
+    .compare-btn.active{background:#1e40af;color:white;border-color:#1e40af}
+    .card-title{font-size:.7rem;font-weight:600;color:#64748b;text-transform:uppercase;
+                letter-spacing:.06em;margin-bottom:.75rem}
+    .card-sub{font-size:.65rem;font-weight:400;text-transform:none;letter-spacing:0;
+              color:#94a3b8;margin-left:.4rem}
+    #login-wrap{position:fixed;inset:0;background:rgba(241,245,249,.97);display:flex;
+                align-items:center;justify-content:center;z-index:50}
+    #loading{position:fixed;inset:0;background:#f1f5f9;display:flex;
+             align-items:center;justify-content:center;z-index:40}
+    .spinner{width:36px;height:36px;border:3px solid #cbd5e1;border-top-color:#2563eb;
+             border-radius:50%;animation:spin .7s linear infinite}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .span2{grid-column:span 2}
+    @media(max-width:1023px){.span2{grid-column:span 1}}
+    .subview-btn{padding:.3rem .85rem;font-size:.72rem;font-weight:500;border-radius:.4rem;
+                 border:1px solid #e2e8f0;background:white;color:#64748b;
+                 cursor:pointer;transition:all .15s;white-space:nowrap}
+    .subview-btn:hover{background:#f8fafc;color:#1e293b}
+    .subview-btn.active{background:#1e3a8a;color:white;border-color:#1e3a8a}
+    ::-webkit-scrollbar{height:4px;width:4px}
+    ::-webkit-scrollbar-track{background:#f1f5f9}
+    ::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:2px}
+    .ann-target-btn{padding:.2rem .55rem;font-size:.65rem;border-radius:.35rem;
+                    border:1px solid #e2e8f0;background:white;color:#64748b;
+                    cursor:pointer;transition:all .15s;line-height:1.4}
+    .ann-target-btn:hover{background:#f1f5f9;color:#1e293b}
+    .ann-target-btn.active{background:#1e40af;color:white;border-color:#1e40af}
+    .monitor-btn{padding:.55rem 1.15rem;font-size:.72rem;font-weight:700;white-space:nowrap;
+                 color:#94a3b8;border-bottom:3px solid transparent;transition:all .15s;
+                 cursor:pointer;background:none;border-top:none;border-left:none;border-right:none;
+                 letter-spacing:.06em;text-transform:uppercase}
+    .monitor-btn:hover{color:#1e293b}
+    .monitor-btn.active{color:#1e40af;border-bottom-color:#1e40af}
+    .monitor-tabs{display:none}.monitor-tabs.active{display:flex}
+    .monitor-placeholder{display:none}
+    .range-btn{padding:.18rem .52rem;font-size:.64rem;font-weight:600;border-radius:.35rem;
+               border:1px solid #e2e8f0;background:white;color:#64748b;
+               cursor:pointer;transition:all .15s;font-family:'IBM Plex Mono',monospace,sans-serif}
+    .range-btn:hover{background:#f1f5f9;color:#1e293b;border-color:#cbd5e1}
+    .range-btn.active{background:#1e3a8a;color:white;border-color:#1e3a8a}
+    .range-date-input{font-size:.64rem;font-family:'IBM Plex Mono',monospace,sans-serif;
+                      border:1px solid #e2e8f0;border-radius:.35rem;padding:.15rem .4rem;
+                      color:#334155;background:white;color-scheme:light;cursor:pointer}
+    .range-date-input:focus{outline:none;border-color:#3b82f6}
+  </style>
+</head>
+<body>
+
+<!-- Loading -->
+<div id="loading">
+  <div class="text-center">
+    <div class="spinner mx-auto mb-3"></div>
+    <p class="text-slate-400 text-sm">Cargando datos...</p>
+  </div>
+</div>
+
+<!-- Login -->
+<div id="login-wrap" style="display:none">
+  <div class="bg-white rounded-2xl p-8 w-80 shadow-xl border border-slate-200">
+    <div class="text-center mb-6">
+      <img src="/static/img/escudo.svg" alt="Escudo República Argentina" class="h-16 w-auto mx-auto mb-3">
+      <h1 class="text-lg font-bold text-slate-800">MONITOR DIARIO</h1>
+    </div>
+    <input id="pwd-input" type="password" placeholder="Contraseña"
+      class="w-full bg-slate-50 border border-slate-300 rounded-lg px-4 py-2.5 text-sm
+             text-slate-800 placeholder-slate-400 focus:outline-none focus:border-blue-500 mb-3">
+    <p id="login-err" class="text-red-500 text-xs mb-3" style="display:none">Contraseña incorrecta</p>
+    <button id="login-btn"
+      class="w-full bg-blue-700 hover:bg-blue-600 text-white font-semibold rounded-lg py-2.5 text-sm transition-colors">
+      Ingresar
+    </button>
+  </div>
+</div>
+
+<!-- Dashboard -->
+<div id="dashboard" style="display:none">
+
+  <!-- Header -->
+  <header class="bg-white border-b border-slate-200 px-4 py-3
+                 flex items-center justify-between sticky top-0 z-30">
+    <div class="flex items-center gap-3">
+      <img src="/static/img/escudo.svg" alt="Escudo República Argentina" class="h-8 w-auto">
+      <span class="font-bold text-slate-800">MONITOR DIARIO</span>
+    </div>
+    <div class="flex items-center gap-3">
+      <span id="last-updated" class="text-slate-400 text-xs hidden sm:inline font-mono"></span>
+      <button onclick="openAnnotationModal()"
+        class="text-slate-500 hover:text-slate-800 text-xs border border-slate-300
+               hover:border-slate-400 rounded-lg px-3 py-1.5 transition-colors">✏ Anotaciones</button>
+      <button id="logout-btn"
+        class="text-slate-500 hover:text-slate-800 text-xs border border-slate-300
+               hover:border-slate-400 rounded-lg px-3 py-1.5 transition-colors">Salir</button>
+    </div>
+  </header>
+
+  <!-- Nav wrapper (sticky as a unit) -->
+  <div class="sticky top-[57px] z-20">
+    <!-- Monitor Nav (primer nivel) -->
+    <nav id="monitor-nav" class="bg-white border-b border-slate-100 overflow-x-auto flex px-2">
+      <button class="monitor-btn active" data-monitor="monetario">MONITOR MONETARIO</button>
+      <button class="monitor-btn" data-monitor="financiero">MONITOR FINANCIERO</button>
+      <button class="monitor-btn" data-monitor="mensual">MONITOR MENSUAL</button>
+      <button class="monitor-btn" data-monitor="fiscal">MONITOR FISCAL</button>
+    </nav>
+    <!-- Sub-tab Nav (segundo nivel) -->
+    <nav id="subtab-nav" class="bg-white border-b border-slate-200 overflow-x-auto">
+      <div id="tabs-monetario" class="monitor-tabs active" data-monitor="monetario">
+        <button class="tab-btn active" data-tab="reservas">RESERVAS &amp; MULC</button>
+        <button class="tab-btn" data-tab="bm">BASE MONETARIA</button>
+        <button class="tab-btn" data-tab="fe-bm">FACTORES EXPANSIÓN</button>
+        <button class="tab-btn" data-tab="liquidez">MONITOR LIQUIDEZ</button>
+        <button class="tab-btn" data-tab="monetarios">M2T PRIVADO/M3</button>
+        <button class="tab-btn" data-tab="tasas">TASAS</button>
+        <button class="tab-btn" data-tab="tcn">TIPO DE CAMBIO</button>
+        <button class="tab-btn" data-tab="embi">EMBI</button>
+      </div>
+      <div id="tabs-financiero" class="monitor-tabs" data-monitor="financiero">
+        <button class="tab-btn" data-tab="credito">CRÉDITO</button>
+        <button class="tab-btn" data-tab="depositos-m">DEPÓSITOS</button>
+        <button class="tab-btn" data-tab="vencimientos">VENCIMIENTOS $/U$D</button>
+      </div>
+      <div id="tabs-mensual" class="monitor-tabs" data-monitor="mensual">
+        <button class="tab-btn" data-tab="inflacion">INFLACIÓN</button>
+        <button class="tab-btn" data-tab="rem">REM</button>
+      </div>
+      <div id="tabs-fiscal" class="monitor-tabs" data-monitor="fiscal">
+        <button class="tab-btn" data-tab="fiscal">RESULTADO FISCAL</button>
+      </div>
+    </nav>
+    <!-- Date range bar -->
+    <div id="date-range-bar" class="bg-white border-b border-slate-100 px-4 py-1.5 flex items-center gap-1.5">
+      <span class="text-xs text-slate-400 font-mono mr-1">Período:</span>
+      <button class="range-btn" data-range="3M">3M</button>
+      <button class="range-btn" data-range="6M">6M</button>
+      <button class="range-btn" data-range="1Y">1A</button>
+      <button class="range-btn" data-range="2Y">2A</button>
+      <button class="range-btn active" data-range="MAX">MAX</button>
+      <div class="ml-3 flex items-center gap-1.5">
+        <input type="date" id="range-from" class="range-date-input">
+        <span class="text-slate-300 text-xs">—</span>
+        <input type="date" id="range-to" class="range-date-input">
+      </div>
+    </div>
+  </div>
+
+  <main class="p-4 max-w-screen-2xl mx-auto">
+
+    <!-- 1 · Reservas & MULC -->
+    <section id="section-reservas" class="tab-section active">
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div class="card">
+          <div class="card-title">Compras MULC Acumuladas<span class="card-sub">en millones de USD</span></div>
+          <canvas id="c-mulc-acum" height="110"></canvas>
+        </div>
+        <div class="card">
+          <div class="card-title">Reservas Brutas<span class="card-sub">en millones de USD</span></div>
+          <canvas id="c-res-brutas" height="110"></canvas>
+        </div>
+        <div class="card">
+          <div class="card-title">Compras MULC Diarias<span class="card-sub">en millones de USD</span></div>
+          <canvas id="c-mulc-diario" height="110"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <!-- 2 · Base Monetaria -->
+    <section id="section-bm" class="tab-section">
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div class="card">
+          <div class="card-title">BM + REPO — Real vs Proyecciones<span class="card-sub">en billones de pesos</span></div>
+          <canvas id="c-bm-repo" height="110"></canvas>
+        </div>
+        <div class="card">
+          <div class="card-title">BM y BM + REPO — Stock<span class="card-sub">en billones de pesos</span></div>
+          <canvas id="c-liq-3" height="110"></canvas>
+        </div>
+        <div class="card">
+          <div class="card-title">Base Monetaria — Real vs Proyecciones<span class="card-sub">en billones de pesos</span></div>
+          <canvas id="c-bm-stock" height="110"></canvas>
+        </div>
+        <div class="card">
+          <div class="card-title">Evolución del Stock de REPO<span class="card-sub">en billones de pesos</span></div>
+          <canvas id="c-repo" height="110"></canvas>
+        </div>
+        <div class="card">
+          <div class="card-title">Circulante en Poder del Público<span class="card-sub">en billones de pesos</span></div>
+          <canvas id="c-circulante" height="110"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3 · Factores Expansión BM -->
+    <section id="section-fe-bm" class="tab-section">
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div class="card">
+          <div class="card-title">Factores de Expansión — Variación Diaria<span class="card-sub">en billones de pesos</span></div>
+          <canvas id="c-fe-diario" height="110"></canvas>
+        </div>
+        <div class="card">
+          <div class="card-title">Factores de Expansión — Acumulado por Componente<span class="card-sub">en billones de pesos</span></div>
+          <canvas id="c-fe-pasivos" height="110"></canvas>
+        </div>
+        <div class="card">
+          <div class="card-title">Factores de Expansión — Acumulado en el Año<span class="card-sub">en billones de pesos</span></div>
+          <canvas id="c-fe-acum" height="110"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3b · Monitor Liquidez -->
+    <section id="section-liquidez" class="tab-section">
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div class="card">
+          <div class="card-title">BM + REPO + Vencimientos a un año — Corredor Monetario<span class="card-sub">en billones de pesos</span></div>
+          <canvas id="c-liq-1" height="110"></canvas>
+        </div>
+        <div class="card">
+          <div class="card-title">Variación Acumulada: BM, REPO y Vencimientos<span class="card-sub">en billones de pesos</span></div>
+          <canvas id="c-liq-9" height="110"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <!-- 4 · M2t Privado / M3 -->
+    <section id="section-monetarios" class="tab-section">
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div class="card"><div class="card-title">M2 Transaccional Privado — Real vs Corredor<span class="card-sub">en billones de pesos</span></div><canvas id="c-m2t" height="110"></canvas></div>
+        <div class="card"><div class="card-title">M3 Total — Real vs Corredor<span class="card-sub">en billones de pesos</span></div><canvas id="c-m3" height="110"></canvas></div>
+        <div class="card"><div class="card-title">Multiplicador M3</div><canvas id="c-m3-mult" height="110"></canvas></div>
+      </div>
+    </section>
+
+    <!-- 6 · TASAS -->
+    <section id="section-tasas" class="tab-section">
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <!-- FILA 1: LECAP | LECAP / Caución -->
+        <div class="card"><div class="card-title">LECAP<span class="card-sub">% TIREA</span></div><canvas id="c-lecap" height="110"></canvas></div>
+        <div class="card"><div class="card-title">LECAP / Caución<span class="card-sub">% TIREA</span></div><canvas id="c-lecap-caucion" height="110"></canvas></div>
+        <!-- FILA 2: BONCAP 1 ano | LECAP / BONCAP 1 ano -->
+        <div class="card"><div class="card-title">BONCAP 1 ano<span class="card-sub">% TIREA</span></div><canvas id="c-t15e7" height="110"></canvas></div>
+        <div class="card"><div class="card-title">LECAP / BONCAP 1 ano<span class="card-sub">% TIREA</span></div><canvas id="c-lecap-t15e7" height="110"></canvas></div>
+        <!-- FILA 3: Tasa Real | Tasa de Arbitraje en Dolares -->
+        <div class="card"><div class="card-title">Tasa Real Implicita LECAP<span class="card-sub">%</span></div><canvas id="c-tasa-real" height="110"></canvas></div>
+        <div class="card"><div class="card-title">Tasa de Arbitraje en Dolares<span class="card-sub">%</span></div><canvas id="c-tasa-dolar" height="110"></canvas></div>
+        <!-- FILA 4: CER TZX27/TZX28 | Breakeven -->
+        <div class="card"><div class="card-title">Tasas de Interes CER<span class="card-sub">TZX27 y TZX28 — % TIREA</span></div><canvas id="c-tzx2728" height="110"></canvas></div>
+        <div class="card"><div class="card-title">Breakeven Inflacion<span class="card-sub">%</span></div><canvas id="c-break-even" height="110"></canvas></div>
+        <!-- FILA 5: Dollar-Linked | Hard Dollar -->
+        <div class="card"><div class="card-title">Dollar-Linked<span class="card-sub">% TIREA</span></div><canvas id="c-tasas-dl-t" height="110"></canvas></div>
+        <div class="card"><div class="card-title">Hard Dollar<span class="card-sub">% TIREA</span></div><canvas id="c-tasas-hd-t" height="110"></canvas></div>
+      </div>
+    </section>
+
+    <!-- 9 · Tipo de Cambio -->
+    <section id="section-tcn" class="tab-section">
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div class="card"><div class="card-title">TCN — MLC + Banda Superior + ROFEX + Proyección<span class="card-sub">ARS/USD</span></div><canvas id="c-tcn" height="110"></canvas></div>
+        <div class="card"><div class="card-title">TCR Bilateral con EE.UU. — Real + Proyección + Base 13-dic-25<span class="card-sub">Índice</span></div><canvas id="c-tcr" height="110"></canvas></div>
+      </div>
+    </section>
+
+    <!-- 10 · EMBI -->
+    <section id="section-embi" class="tab-section">
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div class="card"><div class="card-title">EMBI Argentina y Global<span class="card-sub">bps</span></div><canvas id="c-embi-argy" height="110"></canvas></div>
+        <div class="card"><div class="card-title">Spread Argentina − Global<span class="card-sub">bps</span></div><canvas id="c-embi-spread" height="110"></canvas></div>
+        <div class="card"><div class="card-title">EMBI Argentina vs Tasa LECAP</div><canvas id="c-embi-lecap" height="110"></canvas></div>
+      </div>
+    </section>
+
+    <!-- 11 · Crédito al Sector Privado -->
+    <section id="section-credito" class="tab-section">
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div class="card">
+          <div class="card-title">Crédito al Sector Privado — Composición<span class="card-sub">en billones de pesos</span></div>
+          <canvas id="c-cred-comp-m" height="110"></canvas>
+        </div>
+        <div class="card">
+          <div class="card-title">Crédito al Sector Privado — Var. i.a. Real<span class="card-sub">%</span></div>
+          <canvas id="c-cred-ia-m" height="110"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <!-- 12 · Depósitos Mensual -->
+    <section id="section-depositos-m" class="tab-section">
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div class="card">
+          <div class="card-title">Depósitos en Pesos — Total y Privado<span class="card-sub">en billones de pesos</span></div>
+          <canvas id="c-dep-total-m" height="110"></canvas>
+        </div>
+        <div class="card">
+          <div class="card-title">Depósitos Privados en Pesos — Composición<span class="card-sub">en billones de pesos</span></div>
+          <canvas id="c-dep-comp-m" height="110"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <!-- 13 · Vencimientos $/U$D -->
+    <section id="section-vencimientos" class="tab-section">
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+
+        <!-- Fila 1: Maturity wall por acreedor / instrumento -->
+        <div class="card">
+          <div class="card-title">Vencimientos ARS — Por Acreedor
+            <span class="card-sub">billones de pesos · 2026–2027</span>
+          </div>
+          <canvas id="c-venc-ars-acreedor" height="120"></canvas>
+        </div>
+        <div class="card">
+          <div class="card-title">Vencimientos USD — Por Instrumento
+            <span class="card-sub">millones de USD · 2026–2027</span>
+          </div>
+          <canvas id="c-venc-usd-instr" height="120"></canvas>
+        </div>
+
+        <!-- Fila 2: Capital vs Intereses -->
+        <div class="card">
+          <div class="card-title">Vencimientos ARS — Capital e Intereses
+            <span class="card-sub">billones de pesos</span>
+          </div>
+          <canvas id="c-venc-ars-ci" height="110"></canvas>
+        </div>
+        <div class="card">
+          <div class="card-title">Vencimientos USD — Capital e Intereses
+            <span class="card-sub">millones de USD</span>
+          </div>
+          <canvas id="c-venc-usd-ci" height="110"></canvas>
+        </div>
+
+        <!-- Fila 3: Composición anual (donut) -->
+        <div class="card">
+          <div class="card-title">Composición 2026–27 — ARS por Acreedor</div>
+          <canvas id="c-venc-ars-comp" height="130"></canvas>
+        </div>
+        <div class="card">
+          <div class="card-title">Composición 2026–27 — USD por Instrumento</div>
+          <canvas id="c-venc-usd-comp" height="130"></canvas>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- 14 · Fiscal Mensual -->
+    <section id="section-fiscal" class="tab-section">
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div class="card">
+          <div class="card-title">Primario Acumulado<span class="card-sub">billones de pesos · acumulado en el año</span></div>
+          <canvas id="c-fiscal-prim-acum" height="120"></canvas>
+        </div>
+        <div class="card">
+          <div class="card-title">Ingreso Primario Acumulado<span class="card-sub">billones de pesos · acumulado en el año</span></div>
+          <canvas id="c-fiscal-ing-acum" height="120"></canvas>
+        </div>
+        <div class="card">
+          <div class="card-title">Gasto Primario Acumulado<span class="card-sub">billones de pesos · acumulado en el año</span></div>
+          <canvas id="c-fiscal-gas-acum" height="120"></canvas>
+        </div>
+        <div class="card">
+          <div class="card-title">Resultado Financiero Acumulado<span class="card-sub">billones de pesos · acumulado en el año</span></div>
+          <canvas id="c-fiscal-fin-acum" height="120"></canvas>
+        </div>
+        <div class="card">
+          <div class="card-title">Resultado Primario<span class="card-sub">% del PIB · anual</span></div>
+          <canvas id="c-fiscal-prim" height="110"></canvas>
+        </div>
+        <div class="card">
+          <div class="card-title">Resultado Financiero<span class="card-sub">% del PIB · anual</span></div>
+          <canvas id="c-fiscal-fin" height="110"></canvas>
+        </div>
+        <div class="card span2">
+          <div class="card-title">Ingresos y Gastos<span class="card-sub">billones de pesos · anual</span></div>
+          <canvas id="c-fiscal-inggas" height="90"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <!-- 15 · Inflación Mensual -->
+    <section id="section-inflacion" class="tab-section">
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div class="card">
+          <div class="card-title">Inflación Mensual<span class="card-sub">% — real vs programa</span></div>
+          <canvas id="c-infla-mensual" height="110"></canvas>
+        </div>
+        <div class="card">
+          <div class="card-title">Inflación Interanual<span class="card-sub">% — real vs programa</span></div>
+          <canvas id="c-infla-ia" height="110"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <!-- 16 · REM -->
+    <section id="section-rem" class="tab-section">
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div class="card">
+          <div class="card-title">REM — Inflación Mensual Esperada<span class="card-sub">% — REM vs Programa</span></div>
+          <canvas id="c-rem-infla" height="110"></canvas>
+        </div>
+        <div class="card">
+          <div class="card-title">REM — Tipo de Cambio Nominal Esperado<span class="card-sub">ARS/USD</span></div>
+          <canvas id="c-rem-tcn" height="110"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <!-- Placeholder para monitor fiscal (sin contenido aún) -->
+    <div class="monitor-placeholder" data-monitor="fiscal">
+      <div style="display:flex;align-items:center;justify-content:center;height:60vh;flex-direction:column;gap:.75rem;">
+        <div style="font-size:2.5rem;opacity:.12">🏛</div>
+        <p style="color:#64748b;font-size:.82rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase">Monitor Fiscal</p>
+        <p style="color:#cbd5e1;font-size:.72rem">Próximamente</p>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- Annotation Modal -->
+<div id="annotation-modal" onclick="if(event.target===this)closeAnnotationModal()"
+     style="display:none;position:fixed;inset:0;background:rgba(15,23,42,.7);z-index:300;
+            align-items:center;justify-content:center;padding:1rem;">
+  <div style="background:white;border-radius:1rem;padding:1.5rem;width:100%;max-width:420px;
+              box-shadow:0 25px 60px rgba(0,0,0,.3);max-height:85vh;display:flex;flex-direction:column;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem;flex-shrink:0">
+      <span style="font-size:.75rem;font-weight:600;color:#0f172a">✏ Anotaciones en gráficos</span>
+      <button onclick="closeAnnotationModal()"
+              style="border:none;background:none;color:#94a3b8;cursor:pointer;font-size:.9rem;padding:.2rem .4rem"
+              onmouseover="this.style.color='#0f172a'" onmouseout="this.style.color='#94a3b8'">✕</button>
+    </div>
+    <!-- Lista -->
+    <div id="ann-list" style="flex:1;overflow-y:auto;min-height:60px;margin-bottom:1rem;"></div>
+    <!-- Formulario -->
+    <div style="border-top:1px solid #f1f5f9;padding-top:1rem;flex-shrink:0">
+      <div style="font-size:.65rem;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:.06em;margin-bottom:.75rem">Nueva anotación</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem;margin-bottom:.5rem;">
+        <input id="ann-date" type="date"
+               style="border:1px solid #e2e8f0;border-radius:.5rem;padding:.4rem .6rem;font-size:.75rem;color:#0f172a;font-family:'IBM Plex Mono',monospace;">
+        <select id="ann-color"
+                style="border:1px solid #e2e8f0;border-radius:.5rem;padding:.4rem .6rem;font-size:.75rem;color:#0f172a;">
+          <option value="#2563eb">Azul</option>
+          <option value="#dc2626">Rojo</option>
+          <option value="#16a34a">Verde</option>
+          <option value="#d97706">Naranja</option>
+          <option value="#7c3aed">Violeta</option>
+          <option value="#0891b2">Celeste</option>
+        </select>
+      </div>
+      <div style="margin-bottom:.5rem;">
+        <div style="font-size:.6rem;color:#94a3b8;margin-bottom:.3rem;font-weight:500;">Mostrar en:</div>
+        <div id="ann-targets" style="display:flex;flex-wrap:wrap;gap:.3rem;">
+          <button type="button" class="ann-target-btn active" data-target="">Todos</button>
+          <button type="button" class="ann-target-btn" data-target="reservas">Reservas</button>
+          <button type="button" class="ann-target-btn" data-target="bm">BM</button>
+          <button type="button" class="ann-target-btn" data-target="fe-bm">Fact. Exp.</button>
+          <button type="button" class="ann-target-btn" data-target="liquidez">Liquidez</button>
+          <button type="button" class="ann-target-btn" data-target="monetarios">M2/M3</button>
+          <button type="button" class="ann-target-btn" data-target="tasas">Tasas</button>
+          <button type="button" class="ann-target-btn" data-target="tcn">TCN</button>
+          <button type="button" class="ann-target-btn" data-target="embi">EMBI</button>
+          <button type="button" class="ann-target-btn" data-target="credito">Crédito</button>
+          <button type="button" class="ann-target-btn" data-target="depositos-m">Depósitos</button>
+          <button type="button" class="ann-target-btn" data-target="vencimientos">Venc.</button>
+          <button type="button" class="ann-target-btn" data-target="fiscal">Fiscal</button>
+          <button type="button" class="ann-target-btn" data-target="inflacion">Inflación</button>
+          <button type="button" class="ann-target-btn" data-target="rem">REM</button>
+        </div>
+        <div id="ann-chart-wrap" style="display:none;margin-top:.4rem;">
+          <label style="display:flex;align-items:center;gap:.4rem;cursor:pointer;font-size:.68rem;color:#475569;">
+            <input type="checkbox" id="ann-solo-chart" style="margin:0;accent-color:#1e40af;">
+            <span id="ann-solo-chart-label">Solo este gráfico</span>
+          </label>
+        </div>
+      </div>
+      <div style="display:flex;gap:.5rem;">
+        <input id="ann-label" type="text" placeholder="Etiqueta (ej: Licitación LECAP)"
+               style="flex:1;border:1px solid #e2e8f0;border-radius:.5rem;padding:.4rem .6rem;font-size:.75rem;color:#0f172a;"
+               onkeydown="if(event.key==='Enter')addAnnotation()">
+        <button onclick="addAnnotation()"
+                style="background:#1e40af;color:white;border:none;border-radius:.5rem;
+                       padding:.4rem .9rem;font-size:.75rem;font-weight:600;cursor:pointer;
+                       white-space:nowrap;transition:background .15s"
+                onmouseover="this.style.background='#1d4ed8'" onmouseout="this.style.background='#1e40af'">
+          + Agregar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Compare Tray -->
+<div id="compare-tray" style="display:none;position:fixed;bottom:1.75rem;left:50%;
+     transform:translateX(-50%);background:#1e293b;color:white;border-radius:2rem;
+     padding:.6rem 1rem .6rem 1.25rem;gap:.75rem;align-items:center;z-index:150;
+     box-shadow:0 8px 30px rgba(0,0,0,.35);white-space:nowrap;">
+  <span style="font-size:.78rem;"><span id="compare-count"></span> seleccionado(s)</span>
+  <button onclick="openCompareModal()"
+          style="background:#2563eb;color:white;border:none;border-radius:1rem;
+                 padding:.35rem 1rem;font-size:.78rem;cursor:pointer;font-weight:600;
+                 transition:background .15s"
+          onmouseover="this.style.background='#1d4ed8'" onmouseout="this.style.background='#2563eb'">
+    Ver juntos
+  </button>
+  <button onclick="clearCompare()"
+          style="background:transparent;color:#94a3b8;border:none;font-size:.75rem;
+                 cursor:pointer;padding:.35rem .5rem;transition:color .15s"
+          onmouseover="this.style.color='#f8fafc'" onmouseout="this.style.color='#94a3b8'">
+    Limpiar
+  </button>
+</div>
+
+<!-- Compare Modal -->
+<div id="compare-modal" onclick="if(event.target===this)closeCompareModal()"
+     style="display:none;position:fixed;inset:0;background:rgba(15,23,42,.8);z-index:200;
+            align-items:center;justify-content:center;padding:1rem;">
+  <div style="background:#f1f5f9;border-radius:1rem;padding:1.25rem;width:97vw;height:93vh;
+              display:flex;flex-direction:column;box-shadow:0 25px 60px rgba(0,0,0,.35);">
+    <div style="display:flex;justify-content:space-between;align-items:center;
+                margin-bottom:1rem;flex-shrink:0;">
+      <span style="font-size:.7rem;font-weight:600;color:#64748b;text-transform:uppercase;
+                   letter-spacing:.06em;">Comparación de gráficos</span>
+      <div style="display:flex;gap:.5rem;">
+        <button onclick="clearCompare();closeCompareModal()"
+                style="border:1px solid #e2e8f0;border-radius:.5rem;padding:.3rem .75rem;
+                       font-size:.75rem;color:#64748b;cursor:pointer;background:white;transition:all .15s"
+                onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='white'">
+          Limpiar selección
+        </button>
+        <button onclick="closeCompareModal()"
+                style="border:1px solid #e2e8f0;border-radius:.5rem;padding:.3rem .75rem;
+                       font-size:.75rem;color:#64748b;cursor:pointer;background:white;transition:all .15s"
+                onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='white'">
+          ✕ Cerrar
+        </button>
+      </div>
+    </div>
+    <div id="compare-grid"
+         style="flex:1;display:grid;gap:1rem;min-height:0;"></div>
+  </div>
+</div>
+
+<!-- Expand Modal -->
+<div id="expand-modal" onclick="if(event.target===this)closeExpand()"
+     style="display:none;position:fixed;inset:0;background:rgba(15,23,42,.75);z-index:200;
+            align-items:center;justify-content:center;padding:1.5rem;">
+  <div style="background:white;border-radius:1rem;padding:1.5rem;width:92vw;max-width:1300px;
+              height:82vh;display:flex;flex-direction:column;
+              box-shadow:0 25px 60px rgba(0,0,0,.3)">
+    <div style="display:flex;justify-content:space-between;align-items:center;
+                margin-bottom:1rem;flex-shrink:0">
+      <span id="expand-modal-title"
+            style="font-size:.7rem;font-weight:600;color:#64748b;
+                   text-transform:uppercase;letter-spacing:.06em"></span>
+      <button onclick="closeExpand()"
+              style="border:1px solid #e2e8f0;border-radius:.5rem;padding:.3rem .75rem;
+                     font-size:.75rem;color:#64748b;cursor:pointer;background:white;
+                     transition:all .15s"
+              onmouseover="this.style.background='#f1f5f9'"
+              onmouseout="this.style.background='white'">✕ Cerrar</button>
+    </div>
+    <div style="flex:1;min-height:0;position:relative;">
+      <canvas id="expand-canvas" style="position:absolute;inset:0;"></canvas>
+    </div>
+  </div>
+</div>
+
+<script src="/static/js/dashboard.js?v=33"></script>
+</body>
+</html>
