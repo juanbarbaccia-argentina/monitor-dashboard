@@ -894,6 +894,7 @@ function renderRIGI(d) {
         scales: { x:{stacked:true,grid:{color:'#f1f5f9'},ticks:{font:{size:11},callback:v=>'USD '+(v/1000).toFixed(0)+'B'}}, y:{stacked:true,ticks:{font:{size:11}}} }
       }
     });
+    CHARTS['c-rigi-sector']._noLastDate = true;
   }
 
   // Top 15
@@ -909,6 +910,7 @@ function renderRIGI(d) {
         scales: { x:{grid:{color:'#f1f5f9'},ticks:{font:{size:11},callback:v=>'USD '+v.toLocaleString('es-AR')+' MM'}}, y:{ticks:{font:{size:11}}} }
       }
     });
+    CHARTS['c-rigi-top15']._noLastDate = true;
   }
 
   // BC sector stacked
@@ -927,6 +929,7 @@ function renderRIGI(d) {
         scales: { x:{stacked:true,grid:{color:'#f1f5f9'},ticks:{font:{size:11},callback:v=>'USD '+v.toLocaleString('es-AR')+' MM'}}, y:{stacked:true,ticks:{font:{size:12},color:'#334155'}} }
       }
     });
+    CHARTS['c-rigi-bc']._noLastDate = true;
   }
   const bcNoteEl = document.getElementById('rigi-bc-note');
   if (bcNoteEl) bcNoteEl.innerHTML = `
@@ -1188,6 +1191,7 @@ function initExpandButtons() {
   document.querySelectorAll('.card canvas').forEach(canvas => {
     const card = canvas.closest('.card');
     if (!card) return;
+    if (canvas.closest('#section-rigi')) return;
     if (!card.querySelector('.expand-btn')) {
       const btn = document.createElement('button');
       btn.className = 'expand-btn';
