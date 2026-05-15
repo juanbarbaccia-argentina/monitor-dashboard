@@ -977,7 +977,7 @@ function _rigiInitMap(provData) {
   function hi(e){e.target.setStyle({weight:2.5,color:'#1e3a5f',fillOpacity:.95});e.target.bringToFront();showSidebar(canonical(e.target.feature),e.target.feature);}
   function rh(e){if(gjLayer&&e.target!==selLayer)gjLayer.resetStyle(e.target);}
   function sf(e){if(selLayer&&gjLayer)gjLayer.resetStyle(selLayer);selLayer=e.target;e.target.setStyle({weight:3,color:'#1e3a5f',fillOpacity:.95});}
-  fetch('https://raw.githubusercontent.com/wmgeolab/geoBoundaries/9469f09/releaseData/gbOpen/ARG/ADM1/geoBoundaries-ARG-ADM1_simplified.geojson')
+  fetch('/static/argentina-adm1.geojson')
     .then(res=>res.json())
     .then(gj=>{
       gjLayer=L.geoJSON(gj,{style:styleF,onEachFeature:(feature,layer)=>{layer.on({mouseover:hi,mouseout:rh,click:sf});}}).addTo(_rigiMap);

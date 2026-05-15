@@ -30,9 +30,9 @@ Bun.serve({
       });
     }
 
-    if (pathname.startsWith('/static/img/')) {
+    if (pathname.startsWith('/static/')) {
       const ext = pathname.split('.').pop() || '';
-      const mime: Record<string, string> = { svg: 'image/svg+xml', png: 'image/png', jpg: 'image/jpeg' };
+      const mime: Record<string, string> = { svg: 'image/svg+xml', png: 'image/png', jpg: 'image/jpeg', geojson: 'application/geo+json', json: 'application/json' };
       const file = Bun.file(join(import.meta.dir, pathname));
       if (await file.exists())
         return new Response(file, { headers: { 'Content-Type': mime[ext] || 'application/octet-stream', 'Cache-Control': 'max-age=86400' } });
