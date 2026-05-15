@@ -99,6 +99,7 @@ const lastDatePlugin = {
   id: 'lastDate',
   afterDraw(chart) {
     if (chart.config.type === 'doughnut' || chart.config.type === 'pie') return;
+    if (chart._noLastDate) return;
     const {ctx, chartArea, data} = chart;
     let lastIdx = -1;
     (data.datasets||[]).forEach(ds => {
@@ -270,7 +271,8 @@ function mkChart(id, cfg) {
   cfg.data?.datasets?.forEach(ds => { if (ds.data) ds._rawData = [...ds.data]; });
   if (cfg.options?.plugins) cfg.options.plugins.annotation = { annotations: getAnnotationConfig(id) };
   const chart = new Chart(el, cfg);
-  chart._xFmt = cfg._xFmt;
+  chart._xFmt      = cfg._xFmt;
+  chart._noLastDate = cfg._noLastDate ?? false;
   CHARTS[id] = chart;
   CONFIGS[id] = cfg;
   initLabelDrag(id);
@@ -767,22 +769,22 @@ function renderFiscal(d) {
     ld('Programa', prog,   ci_p, {w:1.5, dash:[5,3]}),
   ];
 
-  mkChart('c-fiscal-prim-acum', {type:'line', _xFmt:xFmt, data:{
+  mkChart('c-fiscal-prim-acum', {type:'line', _xFmt:xFmt, _noLastDate:true, data:{
     labels: fs.dates,
     datasets: _fiscal2(fs.acum_prim_actual, fs.acum_prim_prog, 0, 4),
   }, options: baseOpts({yFmt:fmtB, xFmt})});
 
-  mkChart('c-fiscal-ing-acum', {type:'line', _xFmt:xFmt, data:{
+  mkChart('c-fiscal-ing-acum', {type:'line', _xFmt:xFmt, _noLastDate:true, data:{
     labels: fs.dates,
     datasets: _fiscal2(fs.acum_ing_actual, fs.acum_ing_prog, 1, 7),
   }, options: baseOpts({yFmt:fmtB, xFmt})});
 
-  mkChart('c-fiscal-gas-acum', {type:'line', _xFmt:xFmt, data:{
+  mkChart('c-fiscal-gas-acum', {type:'line', _xFmt:xFmt, _noLastDate:true, data:{
     labels: fs.dates,
     datasets: _fiscal2(fs.acum_gas_actual, fs.acum_gas_prog, 8, 2),
   }, options: baseOpts({yFmt:fmtB, xFmt})});
 
-  mkChart('c-fiscal-fin-acum', {type:'line', _xFmt:xFmt, data:{
+  mkChart('c-fiscal-fin-acum', {type:'line', _xFmt:xFmt, _noLastDate:true, data:{
     labels: fs.dates,
     datasets: _fiscal2(fs.acum_fin_actual, fs.acum_fin_prog, 0, 4),
   }, options: baseOpts({yFmt:fmtB, xFmt})});
