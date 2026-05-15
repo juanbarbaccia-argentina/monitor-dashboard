@@ -817,6 +817,215 @@ function renderREM(d) {
   ]}, options: baseOpts({yFmt:fmtNum, xFmt:fmtMonth})});
 }
 
+// ── RIGI ─────────────────────────────────────────────────────────────────────
+let _rigiMap = null;
+
+function renderRIGI(d) {
+  if (!d.rigi) return;
+  const r = d.rigi;
+  const k = r.kpis;
+
+  // KPI cards
+  const kpiEl = document.getElementById('rigi-kpis');
+  if (kpiEl) {
+    const badge = (txt, bg, tc) => `<span style="display:inline-block;padding:2px 8px;border-radius:9999px;font-size:.68rem;font-weight:600;background:${bg};color:${tc}">${txt}</span>`;
+    kpiEl.innerHTML = `
+      <div class="card"><div style="font-size:.72rem;color:#64748b;font-weight:500;margin-bottom:.4rem">Proyectos Totales</div>
+        <div style="font-size:1.5rem;font-weight:700;color:#1e293b">${k.proyectos}</div>
+        <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:.4rem">
+          ${badge(k.aprobados+' Aprobados','#1e3a8a','#fff')}
+          ${badge(k.evaluacion+' En Eval.','#bae6fd','#0c4a6e')}
+          ${badge(k.comite+' Comité','#2563eb','#fff')}
+        </div></div>
+      <div class="card"><div style="font-size:.72rem;color:#64748b;font-weight:500;margin-bottom:.4rem">Inversión Total</div>
+        <div style="font-size:1.5rem;font-weight:700;color:#1e293b">USD ${k.inversion.toLocaleString('es-AR')}</div>
+        <div style="font-size:.7rem;color:#94a3b8;margin-top:.25rem">≈ USD ${k.inv_b} B</div></div>
+      <div class="card"><div style="font-size:.72rem;color:#64748b;font-weight:500;margin-bottom:.4rem">Inv. Computables</div>
+        <div style="font-size:1.5rem;font-weight:700;color:#1e293b">USD ${k.computables.toLocaleString('es-AR')}</div>
+        <div style="font-size:.7rem;color:#94a3b8;margin-top:.25rem">${k.pct_computables}% del total</div></div>
+      <div class="card"><div style="font-size:.72rem;color:#64748b;font-weight:500;margin-bottom:.4rem">Impacto BC Anual</div>
+        <div style="font-size:1.5rem;font-weight:700;color:#1e293b">USD ${k.bc_anual.toLocaleString('es-AR')}</div>
+        <div style="font-size:.7rem;color:#94a3b8;margin-top:.25rem">≈ USD ${k.bc_b} B en régimen</div></div>
+      <div class="card"><div style="font-size:.72rem;color:#64748b;font-weight:500;margin-bottom:.4rem">Empleos Máximos</div>
+        <div style="font-size:1.5rem;font-weight:700;color:#1e293b">${k.empleo.toLocaleString('es-AR')}</div>
+        <div style="font-size:.7rem;color:#94a3b8;margin-top:.25rem">Construcción + operación</div></div>
+    `;
+  }
+
+  // Donut
+  const e = r.estado_chart;
+  const donutEl = document.getElementById('c-rigi-donut');
+  if (donutEl) {
+    if (CHARTS['c-rigi-donut']) { try { CHARTS['c-rigi-donut'].destroy(); } catch(ex){} }
+    CHARTS['c-rigi-donut'] = new Chart(donutEl, {
+      type: 'doughnut',
+      data: { labels: e.labels, datasets: [{ data: e.values, backgroundColor: e.colors, borderWidth: 2, borderColor: '#fff', hoverOffset: 4 }] },
+      options: { cutout: '68%', plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ` ${ctx.label}: ${ctx.raw} proyectos` } } } }
+    });
+  }
+  const legendEl = document.getElementById('rigi-donut-legend');
+  if (legendEl) legendEl.innerHTML = `
+    <div style="display:flex;align-items:center;gap:.5rem;font-size:.82rem"><span style="width:11px;height:11px;border-radius:50%;background:#1e3a8a;flex-shrink:0"></span><span style="color:#64748b">Aprobado</span><span style="margin-left:auto;font-weight:700;color:#1e293b">${k.aprobados}</span></div>
+    <div style="display:flex;align-items:center;gap:.5rem;font-size:.82rem"><span style="width:11px;height:11px;border-radius:50%;background:#60a5fa;flex-shrink:0"></span><span style="color:#64748b">En Evaluación</span><span style="margin-left:auto;font-weight:700;color:#1e293b">${k.evaluacion}</span></div>
+    <div style="display:flex;align-items:center;gap:.5rem;font-size:.82rem"><span style="width:11px;height:11px;border-radius:50%;background:#2563eb;flex-shrink:0"></span><span style="color:#64748b">Aprobado por Comité</span><span style="margin-left:auto;font-weight:700;color:#1e293b">${k.comite}</span></div>
+    <div style="margin-top:.6rem;padding-top:.6rem;border-top:1px solid #f1f5f9">
+      <div style="font-size:.7rem;color:#94a3b8">Inversión aprobada</div>
+      <div style="font-size:.82rem;font-weight:700;color:#334155">USD ${e.inv_aprobados.toLocaleString('es-AR')} MM</div>
+    </div>
+    <div>
+      <div style="font-size:.7rem;color:#94a3b8">Inversión en pipeline</div>
+      <div style="font-size:.82rem;font-weight:700;color:#334155">USD ${e.inv_evaluacion.toLocaleString('es-AR')} MM</div>
+    </div>`;
+
+  // Sector bar
+  const si = r.sector_inv_chart;
+  const secEl = document.getElementById('c-rigi-sector');
+  if (secEl) {
+    if (CHARTS['c-rigi-sector']) { try { CHARTS['c-rigi-sector'].destroy(); } catch(ex){} }
+    CHARTS['c-rigi-sector'] = new Chart(secEl, {
+      type: 'bar',
+      data: { labels: si.labels, datasets: [
+        { label:'Aprobado', data:si.aprobados, backgroundColor:'#1e3a8a', borderRadius:3 },
+        { label:'Por Comité', data:si.comite, backgroundColor:'#2563eb', borderRadius:3 },
+        { label:'En Evaluación', data:si.evaluacion, backgroundColor:'#60a5fa', borderRadius:3 },
+      ]},
+      options: { indexAxis:'y', responsive:true, maintainAspectRatio:false,
+        plugins: { legend:{position:'bottom',labels:{boxWidth:10,font:{size:11}}}, tooltip:{callbacks:{label:ctx=>` USD ${ctx.raw.toLocaleString('es-AR')} MM`}} },
+        scales: { x:{stacked:true,grid:{color:'#f1f5f9'},ticks:{font:{size:11},callback:v=>'USD '+(v/1000).toFixed(0)+'B'}}, y:{stacked:true,ticks:{font:{size:11}}} }
+      }
+    });
+  }
+
+  // Top 15
+  const t15 = r.top15_chart;
+  const top15El = document.getElementById('c-rigi-top15');
+  if (top15El) {
+    if (CHARTS['c-rigi-top15']) { try { CHARTS['c-rigi-top15'].destroy(); } catch(ex){} }
+    CHARTS['c-rigi-top15'] = new Chart(top15El, {
+      type: 'bar',
+      data: { labels: t15.labels, datasets: [{ data:t15.values, backgroundColor:t15.colors, borderRadius:4 }] },
+      options: { indexAxis:'y', responsive:true, maintainAspectRatio:false,
+        plugins: { legend:{display:false}, tooltip:{callbacks:{label:ctx=>` USD ${ctx.raw.toLocaleString('es-AR')} MM`}} },
+        scales: { x:{grid:{color:'#f1f5f9'},ticks:{font:{size:11},callback:v=>'USD '+v.toLocaleString('es-AR')+' MM'}}, y:{ticks:{font:{size:11}}} }
+      }
+    });
+  }
+
+  // BC sector stacked
+  const bc = r.bc_sector_stacked;
+  const bcEl = document.getElementById('c-rigi-bc');
+  if (bcEl) {
+    if (CHARTS['c-rigi-bc']) { try { CHARTS['c-rigi-bc'].destroy(); } catch(ex){} }
+    CHARTS['c-rigi-bc'] = new Chart(bcEl, {
+      type: 'bar',
+      data: { labels: bc.labels, datasets: [
+        { label:'Aprobado / Por Comité', data:bc.aprobados, backgroundColor:'#1e3a8a', borderRadius:3 },
+        { label:'En Evaluación',         data:bc.evaluacion, backgroundColor:'#60a5fa', borderRadius:3 },
+      ]},
+      options: { indexAxis:'y', responsive:true, maintainAspectRatio:false,
+        plugins: { legend:{position:'bottom',labels:{boxWidth:10,font:{size:11}}}, tooltip:{callbacks:{label:ctx=>` USD ${ctx.raw.toLocaleString('es-AR')} MM`}} },
+        scales: { x:{stacked:true,grid:{color:'#f1f5f9'},ticks:{font:{size:11},callback:v=>'USD '+v.toLocaleString('es-AR')+' MM'}}, y:{stacked:true,ticks:{font:{size:12},color:'#334155'}} }
+      }
+    });
+  }
+  const bcNoteEl = document.getElementById('rigi-bc-note');
+  if (bcNoteEl) bcNoteEl.innerHTML = `
+    <div style="flex:1;background:#fefce8;border:1px solid #fef08a;border-radius:.5rem;padding:.4rem .75rem;font-size:.72rem;color:#78350f">
+      <strong>Vaca Muerta Oil Sur (VMOS):</strong> USD ${bc.vmos.toLocaleString('es-AR')} MM de impacto anual en BC — fecha de inicio de producción pendiente (no incluido en el gráfico)
+    </div>
+    <div style="display:flex;gap:1rem;background:#f8fafc;border-radius:.5rem;padding:.4rem .875rem;align-items:center">
+      <div><div style="font-size:.7rem;color:#64748b">BC asegurado</div><div style="font-weight:700;color:#15803d;font-size:.85rem">USD ${bc.bc_ap_total.toLocaleString('es-AR')} MM</div></div>
+      <div style="width:1px;background:#e2e8f0;align-self:stretch"></div>
+      <div><div style="font-size:.7rem;color:#64748b">BC en pipeline</div><div style="font-weight:700;color:#d97706;font-size:.85rem">USD ${bc.bc_ev_total.toLocaleString('es-AR')} MM</div></div>
+    </div>`;
+
+  // Fecha
+  const fechaEl = document.getElementById('rigi-fecha');
+  if (fechaEl && r.fecha) fechaEl.textContent = r.fecha;
+
+  // Mapa
+  _rigiInitMap(r.province_data);
+
+  // Tabla
+  _rigiInitTable(r.projects);
+}
+
+function _rigiInitMap(provData) {
+  if (typeof L === 'undefined') { setTimeout(() => _rigiInitMap(provData), 300); return; }
+  if (_rigiMap) { _rigiMap.invalidateSize(); return; }
+  const el = document.getElementById('rigi-map-el');
+  if (!el) return;
+  _rigiMap = L.map('rigi-map-el', { center:[-38,-64], zoom:4, zoomControl:true, attributionControl:false, scrollWheelZoom:false });
+  const PROV = provData;
+  let gjLayer = null, selLayer = null;
+  function norm(s) { return (s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().trim(); }
+  const LOOKUP = {}; Object.keys(PROV).forEach(k => { LOOKUP[norm(k)] = k; });
+  function canonical(f) { const p=f.properties; const raw=p.shapeName||p.nombre||p.name||p.NOMBREPCIA||p.NAM||''; return LOOKUP[norm(raw)]||null; }
+  function getColor(n) { return n>=6?'#166534':n>=4?'#16a34a':n>=2?'#4ade80':n>=1?'#bbf7d0':'#e2e8f0'; }
+  function styleF(f) { const c=canonical(f),d=c?PROV[c]:{total:0}; return {fillColor:getColor(d.total),weight:1.5,color:'#94a3b8',fillOpacity:d.total>0?.85:.4}; }
+  function showSidebar(canon, f) {
+    const rawName=(f?.properties?.shapeName||f?.properties?.nombre||canon||'');
+    const d=canon?PROV[canon]:null;
+    const sb=document.getElementById('rigi-map-sidebar'); if(!sb)return;
+    if(!d||d.total===0){sb.innerHTML=`<div style="text-align:center;color:#94a3b8;margin-top:3rem;padding:0 .5rem;font-size:.8rem"><strong style="color:#475569">${rawName}</strong><br>Sin proyectos RIGI</div>`;return;}
+    const bst=e=>e==='Aprobado'?'background:#1e3a8a;color:#fff':e==='En Evaluación'?'background:#bae6fd;color:#0c4a6e':'background:#2563eb;color:#fff';
+    let html=`<div><div style="font-weight:700;color:#1e293b;font-size:.88rem">${canon}</div><div style="font-size:.7rem;color:#94a3b8">${d.total} proyecto${d.total>1?'s':''} · USD ${d.inv_total.toLocaleString('es-AR')} MM</div></div><div style="margin-top:.5rem">`;
+    for(const p of d.proyectos) html+=`<div style="border-left:3px solid #2563eb;padding:5px 8px;margin-bottom:5px;border-radius:0 5px 5px 0;background:#f8fafc"><div style="font-size:.75rem;font-weight:600;color:#1e293b">${p.nombre}</div><div style="font-size:.7rem;color:#94a3b8">${p.sector2}</div><div style="display:flex;align-items:center;justify-content:space-between;margin-top:3px"><span style="display:inline-block;padding:1px 6px;border-radius:9999px;font-size:.65rem;font-weight:600;${bst(p.estado)}">${p.estado}</span><span style="font-family:monospace;font-size:.72rem;color:#64748b">USD ${p.inversion.toLocaleString('es-AR')} MM</span></div></div>`;
+    html+=`</div>`;
+    sb.innerHTML=html;
+  }
+  function hi(e){e.target.setStyle({weight:2.5,color:'#1e3a5f',fillOpacity:.95});e.target.bringToFront();showSidebar(canonical(e.target.feature),e.target.feature);}
+  function rh(e){if(gjLayer&&e.target!==selLayer)gjLayer.resetStyle(e.target);}
+  function sf(e){if(selLayer&&gjLayer)gjLayer.resetStyle(selLayer);selLayer=e.target;e.target.setStyle({weight:3,color:'#1e3a5f',fillOpacity:.95});}
+  fetch('https://raw.githubusercontent.com/wmgeolab/geoBoundaries/9469f09/releaseData/gbOpen/ARG/ADM1/geoBoundaries-ARG-ADM1_simplified.geojson')
+    .then(res=>res.json())
+    .then(gj=>{
+      gjLayer=L.geoJSON(gj,{style:styleF,onEachFeature:(feature,layer)=>{layer.on({mouseover:hi,mouseout:rh,click:sf});}}).addTo(_rigiMap);
+      if(gjLayer.getBounds().isValid()) _rigiMap.fitBounds(gjLayer.getBounds(),{padding:[10,10]});
+    })
+    .catch(()=>{const el=document.getElementById('rigi-map-el');if(el)el.innerHTML='<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#94a3b8;font-size:.85rem;padding:2rem;text-align:center">Mapa no disponible (verificá conexión a internet)</div>';});
+}
+
+function _rigiInitTable(projects) {
+  const tbody=document.getElementById('rigi-table-body');
+  const search=document.getElementById('rigi-search');
+  const countEl=document.getElementById('rigi-count');
+  const filterBtns=document.querySelectorAll('[data-rigi-filter]');
+  if(!tbody) return;
+  let activeFilter='all', q='';
+  const bst=e=>e==='Aprobado'?'background:#1e3a8a;color:#fff':e==='En Evaluación'?'background:#bae6fd;color:#0c4a6e':'background:#2563eb;color:#fff';
+  function render(){
+    const filtered=projects.filter(p=>{
+      const mf=activeFilter==='all'||p.estado===activeFilter;
+      const ms=!q||[p.nombre,p.sector2,p.integrantes,p.ubicacion].some(s=>(s||'').toLowerCase().includes(q));
+      return mf&&ms;
+    });
+    if(countEl) countEl.textContent=filtered.length+' proyecto'+(filtered.length!==1?'s':'');
+    tbody.innerHTML=filtered.map(p=>`<tr style="border-bottom:1px solid #e2e8f0">
+      <td style="padding:7px 10px;color:#94a3b8;font-size:.72rem">${p.id}</td>
+      <td style="padding:7px 10px"><div style="font-weight:600;font-size:.8rem;color:#1e293b">${p.nombre}</div><div style="font-size:.68rem;color:#94a3b8">${p.integrantes||''}</div></td>
+      <td style="padding:7px 10px"><div style="font-size:.75rem;font-weight:500">${p.sector2||''}</div><div style="font-size:.68rem;color:#94a3b8">${p.sector||''}</div></td>
+      <td style="padding:7px 10px;font-size:.72rem;color:#64748b">${p.tipo||''}</td>
+      <td style="padding:7px 10px"><span style="display:inline-block;padding:2px 7px;border-radius:9999px;font-size:.66rem;font-weight:600;${bst(p.estado)}">${p.estado}</span></td>
+      <td style="padding:7px 10px;text-align:right;font-family:monospace;font-weight:600;color:#334155">${p.inversion.toLocaleString('es-AR')}</td>
+      <td style="padding:7px 10px;text-align:right;font-family:monospace;color:#64748b">${p.computables.toLocaleString('es-AR')}</td>
+      <td style="padding:7px 10px;text-align:right;font-family:monospace;${p.bc>0?'color:#15803d;font-weight:600':'color:#94a3b8'}">${p.bc>0?p.bc.toLocaleString('es-AR'):'—'}</td>
+      <td style="padding:7px 10px;text-align:right;font-family:monospace;color:#64748b">${p.empleo>0?p.empleo.toLocaleString('es-AR'):'—'}</td>
+      <td style="padding:7px 10px;font-size:.7rem;color:#64748b">${p.ubicacion||''}</td>
+      <td style="padding:7px 10px;font-size:.7rem;color:#64748b">${p.resolucion||'—'}</td>
+    </tr>`).join('')||'<tr><td colspan="11" style="text-align:center;padding:2rem;color:#94a3b8;font-size:.82rem">Sin resultados</td></tr>';
+  }
+  if(search&&!search._rigiInited){search._rigiInited=true;search.addEventListener('input',ev=>{q=ev.target.value.toLowerCase();render();});}
+  filterBtns.forEach(btn=>{
+    if(!btn._rigiInited){btn._rigiInited=true;btn.addEventListener('click',()=>{
+      activeFilter=btn.dataset.rigiFilter;
+      filterBtns.forEach(b=>{b.classList.toggle('rigi-filter-active',b===btn);b.style.background=b===btn?'':'#e2e8f0';b.style.color=b===btn?'':'#64748b';});
+      render();
+    });}
+  });
+  render();
+}
+
 function renderCredito(d) {
   if (!d.credito) return;
   const cr = d.credito;
@@ -1257,7 +1466,7 @@ const RENDERERS = {
   'liquidez':renderLiquidez,'monetarios':renderMonetarios,
   'tasas':renderTasas,'tcn':renderTCN,'embi':renderEMBI,
   'credito':renderCredito,'depositos-m':renderDepositosM,'vencimientos':renderVencimientos,
-  'fiscal':renderFiscal,'inflacion':renderInflacion,'rem':renderREM,
+  'fiscal':renderFiscal,'inflacion':renderInflacion,'rem':renderREM,'rigi':renderRIGI,
 };
 const rendered = new Set();
 
@@ -1285,7 +1494,7 @@ function activateTab(tabId) {
 const MONITOR_TABS = {
   'monetario':  ['reservas','bm','fe-bm','liquidez','monetarios','tasas','tcn','embi'],
   'financiero': ['credito','depositos-m','vencimientos'],
-  'mensual':    ['inflacion','rem'],
+  'mensual':    ['inflacion','rem','rigi'],
   'fiscal':     ['fiscal'],
 };
 

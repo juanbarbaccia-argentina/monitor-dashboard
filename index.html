@@ -19,6 +19,8 @@
   </script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3/dist/chartjs-plugin-annotation.min.js"></script>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <script defer src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <style>
     body{background:#f1f5f9;color:#0f172a;font-family:system-ui,sans-serif}
     .tab-btn{padding:.5rem 1rem;font-size:.66rem;white-space:nowrap;color:#64748b;
@@ -66,6 +68,7 @@
                     cursor:pointer;transition:all .15s;line-height:1.4}
     .ann-target-btn:hover{background:#f1f5f9;color:#1e293b}
     .ann-target-btn.active{background:#1e40af;color:white;border-color:#1e40af}
+    .rigi-filter-active{background:#334155!important;color:#fff!important}
     .monitor-btn{padding:.55rem 1.15rem;font-size:.72rem;font-weight:700;white-space:nowrap;
                  color:#94a3b8;border-bottom:3px solid transparent;transition:all .15s;
                  cursor:pointer;background:none;border-top:none;border-left:none;border-right:none;
@@ -163,6 +166,7 @@
       <div id="tabs-mensual" class="monitor-tabs" data-monitor="mensual">
         <button class="tab-btn" data-tab="inflacion">INFLACIÓN</button>
         <button class="tab-btn" data-tab="rem">REM</button>
+        <button class="tab-btn" data-tab="rigi">RIGI</button>
       </div>
       <div id="tabs-fiscal" class="monitor-tabs" data-monitor="fiscal">
         <button class="tab-btn" data-tab="fiscal">RESULTADO FISCAL</button>
@@ -432,6 +436,102 @@
       </div>
     </section>
 
+    <!-- RIGI -->
+    <section id="section-rigi" class="tab-section">
+      <div class="flex justify-between items-center mb-3 px-1">
+        <span style="font-size:.72rem;color:#94a3b8">Datos al: <span id="rigi-fecha">—</span></span>
+      </div>
+      <!-- KPI Cards -->
+      <div id="rigi-kpis" class="grid grid-cols-2 lg:grid-cols-5 gap-3 mb-4"></div>
+      <!-- Donut + Sector -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+        <div class="card">
+          <div class="card-title">Distribución por Estado</div>
+          <div style="display:flex;align-items:center;gap:1.25rem">
+            <div style="width:160px;height:160px;flex-shrink:0"><canvas id="c-rigi-donut"></canvas></div>
+            <div id="rigi-donut-legend" class="flex flex-col gap-2" style="flex:1"></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">Inversión Total por Sector (USD MM)</div>
+          <div style="height:210px"><canvas id="c-rigi-sector"></canvas></div>
+        </div>
+      </div>
+      <!-- Top 15 -->
+      <div class="card mb-4">
+        <div class="card-title">Top 15 Proyectos – Inversión Total (USD MM)</div>
+        <div class="flex flex-wrap gap-3 mb-2" style="font-size:.72rem;color:#64748b">
+          <span style="display:flex;align-items:center;gap:4px"><span style="width:12px;height:12px;border-radius:2px;background:#1e3a8a;display:inline-block"></span>Aprobado</span>
+          <span style="display:flex;align-items:center;gap:4px"><span style="width:12px;height:12px;border-radius:2px;background:#60a5fa;display:inline-block"></span>En Evaluación</span>
+          <span style="display:flex;align-items:center;gap:4px"><span style="width:12px;height:12px;border-radius:2px;background:#2563eb;display:inline-block"></span>Aprobado por Comité</span>
+        </div>
+        <div style="height:380px"><canvas id="c-rigi-top15"></canvas></div>
+      </div>
+      <!-- Mapa -->
+      <div class="card mb-4 p-0 overflow-hidden">
+        <div style="padding:.875rem 1.25rem;border-bottom:1px solid #f1f5f9;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.5rem">
+          <div>
+            <div style="font-weight:700;font-size:.85rem;color:#1e293b">Distribución Geográfica de Proyectos</div>
+            <div style="font-size:.7rem;color:#94a3b8;margin-top:2px">Hover o clic sobre una provincia para ver el detalle</div>
+          </div>
+          <div style="display:flex;gap:.75rem;font-size:.7rem;color:#64748b;align-items:center;flex-wrap:wrap">
+            <span style="display:flex;align-items:center;gap:4px"><span style="width:14px;height:10px;border-radius:2px;background:#166534;display:inline-block"></span>6+</span>
+            <span style="display:flex;align-items:center;gap:4px"><span style="width:14px;height:10px;border-radius:2px;background:#16a34a;display:inline-block"></span>4–5</span>
+            <span style="display:flex;align-items:center;gap:4px"><span style="width:14px;height:10px;border-radius:2px;background:#4ade80;display:inline-block"></span>2–3</span>
+            <span style="display:flex;align-items:center;gap:4px"><span style="width:14px;height:10px;border-radius:2px;background:#bbf7d0;display:inline-block"></span>1</span>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:row">
+          <div id="rigi-map-el" style="height:450px;flex:1;min-width:0;background:#f8fafc"></div>
+          <div id="rigi-map-sidebar" style="width:280px;padding:1rem;border-left:1px solid #f1f5f9;overflow-y:auto;max-height:450px;font-size:.82rem">
+            <div style="text-align:center;color:#94a3b8;margin-top:3rem;font-size:.82rem;padding:0 .5rem">Seleccioná una provincia para ver sus proyectos</div>
+          </div>
+        </div>
+      </div>
+      <!-- BC por Sector -->
+      <div class="card mb-4">
+        <div class="card-title">Impacto en Balanza Comercial Anual por Sector (USD MM)</div>
+        <div style="height:180px"><canvas id="c-rigi-bc"></canvas></div>
+        <div id="rigi-bc-note" class="flex flex-col sm:flex-row gap-3 mt-3"></div>
+      </div>
+      <!-- Tabla -->
+      <div class="card p-0 overflow-hidden">
+        <div style="padding:.75rem 1.25rem;border-bottom:1px solid #f1f5f9;display:flex;flex-wrap:wrap;align-items:center;gap:.75rem">
+          <div>
+            <div style="font-weight:700;font-size:.85rem;color:#1e293b">Detalle de Proyectos</div>
+            <div style="font-size:.7rem;color:#94a3b8" id="rigi-count">—</div>
+          </div>
+          <div style="margin-left:auto;display:flex;flex-wrap:wrap;gap:.5rem;align-items:center">
+            <input id="rigi-search" type="text" placeholder="Buscar..." style="font-size:.78rem;border:1px solid #e2e8f0;border-radius:.5rem;padding:.3rem .75rem;width:180px;outline:none">
+            <button data-rigi-filter="all" class="rigi-filter-active" style="font-size:.7rem;font-weight:600;padding:.25rem .7rem;border-radius:9999px;border:none;cursor:pointer;background:#e2e8f0;color:#64748b">Todos</button>
+            <button data-rigi-filter="Aprobado" style="font-size:.7rem;font-weight:600;padding:.25rem .7rem;border-radius:9999px;border:none;cursor:pointer;background:#e2e8f0;color:#64748b">Aprobados</button>
+            <button data-rigi-filter="En Evaluación" style="font-size:.7rem;font-weight:600;padding:.25rem .7rem;border-radius:9999px;border:none;cursor:pointer;background:#e2e8f0;color:#64748b">En Evaluación</button>
+            <button data-rigi-filter="Aprobado por Comité" style="font-size:.7rem;font-weight:600;padding:.25rem .7rem;border-radius:9999px;border:none;cursor:pointer;background:#e2e8f0;color:#64748b">Por Comité</button>
+          </div>
+        </div>
+        <div style="overflow-x:auto;max-height:520px;overflow-y:auto">
+          <table style="width:100%;border-collapse:collapse;font-size:.78rem">
+            <thead>
+              <tr>
+                <th style="background:#1e3a5f;color:#fff;padding:8px 10px;text-align:left;position:sticky;top:0;z-index:2;font-size:.72rem">#</th>
+                <th style="background:#1e3a5f;color:#fff;padding:8px 10px;text-align:left;position:sticky;top:0;z-index:2;font-size:.72rem">Proyecto</th>
+                <th style="background:#1e3a5f;color:#fff;padding:8px 10px;text-align:left;position:sticky;top:0;z-index:2;font-size:.72rem">Sector</th>
+                <th style="background:#1e3a5f;color:#fff;padding:8px 10px;text-align:left;position:sticky;top:0;z-index:2;font-size:.72rem">Tipo</th>
+                <th style="background:#1e3a5f;color:#fff;padding:8px 10px;text-align:left;position:sticky;top:0;z-index:2;font-size:.72rem">Estado</th>
+                <th style="background:#1e3a5f;color:#fff;padding:8px 10px;text-align:right;position:sticky;top:0;z-index:2;font-size:.72rem">Inv. Total<br><span style="opacity:.75;font-weight:400">(USD MM)</span></th>
+                <th style="background:#1e3a5f;color:#fff;padding:8px 10px;text-align:right;position:sticky;top:0;z-index:2;font-size:.72rem">Computables<br><span style="opacity:.75;font-weight:400">(USD MM)</span></th>
+                <th style="background:#1e3a5f;color:#fff;padding:8px 10px;text-align:right;position:sticky;top:0;z-index:2;font-size:.72rem">Imp. BC<br><span style="opacity:.75;font-weight:400">(USD MM)</span></th>
+                <th style="background:#1e3a5f;color:#fff;padding:8px 10px;text-align:right;position:sticky;top:0;z-index:2;font-size:.72rem">Empleo</th>
+                <th style="background:#1e3a5f;color:#fff;padding:8px 10px;text-align:left;position:sticky;top:0;z-index:2;font-size:.72rem">Ubicación</th>
+                <th style="background:#1e3a5f;color:#fff;padding:8px 10px;text-align:left;position:sticky;top:0;z-index:2;font-size:.72rem">Resolución</th>
+              </tr>
+            </thead>
+            <tbody id="rigi-table-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
     <!-- Placeholder para monitor fiscal (sin contenido aún) -->
     <div class="monitor-placeholder" data-monitor="fiscal">
       <div style="display:flex;align-items:center;justify-content:center;height:60vh;flex-direction:column;gap:.75rem;">
@@ -592,6 +692,6 @@
   </div>
 </div>
 
-<script src="/static/js/dashboard.js?v=35"></script>
+<script src="/static/js/dashboard.js?v=36"></script>
 </body>
 </html>
