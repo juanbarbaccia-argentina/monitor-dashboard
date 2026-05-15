@@ -1576,6 +1576,85 @@ async function init() {
   } catch(e) { console.error(e); showLogin(); }
 }
 
+// ── Refresh polling ───────────────────────────────────────────────────────────
+let _refreshPollTimer   = null;
+let _refreshRequestedAt = null;
+const REFRESH_TIMEOUT_MS = 5 * 60 * 1000;
+
+function _setRefreshBtn(state) {
+  const btn = document.getElementById('refresh-btn');
+  if (!btn) return;
+  if (state === 'loading') {
+    btn.textContent = '↻ Actualizando...';
+    btn.disabled = true;
+    btn.style.opacity = '.6';
+  } else if (state === 'done') {
+    btn.textContent = '↻ Actualizar';
+    btn.disabled = false;
+    btn.style.opacity = '';
+  } else if (state === 'error') {
+    btn.textContent = '↻ Sin daemon';
+    btn.disabled = false;
+    btn.style.opacity = '';
+    btn.title = 'No se recibió respuesta. ¿Está corriendo refresh_daemon.py?';
+  }
+}
+
+async function _silentReload() {
+  try {
+    const r = await fetch('/api/data');
+    if (!r.ok) return;
+    const data = await r.json();
+    window._data = data;
+    rendered.clear();
+    if (data.last_updated) {
+      const dt = new Date(data.last_updated);
+      $('last-updated').textContent = 'Actualizado: ' +
+        dt.toLocaleString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
+    }
+    if (_activeTab) renderSection(_activeTab);
+  } catch(e) { console.error(e); }
+}
+
+function _stopRefreshPoll() {
+  if (_refreshPollTimer) { clearInterval(_refreshPollTimer); _refreshPollTimer = null; }
+}
+
+function _startRefreshPoll() {
+  _stopRefreshPoll();
+  const startedAt = Date.now();
+  _refreshPollTimer = setInterval(async () => {
+    if (Date.now() - startedAt > REFRESH_TIMEOUT_MS) {
+      _stopRefreshPoll();
+      _setRefreshBtn('error');
+      return;
+    }
+    try {
+      const r = await fetch('/api/refresh-state');
+      if (!r.ok) return;
+      const st = await r.json();
+      if (!st.pending && st.lastRefreshedAt && st.lastRefreshedAt > (_refreshRequestedAt || 0)) {
+        _stopRefreshPoll();
+        _setRefreshBtn('done');
+        await _silentReload();
+      }
+    } catch(e) {}
+  }, 5000);
+}
+
+async function requestRefresh() {
+  const btn = document.getElementById('refresh-btn');
+  if (!btn || btn.disabled) return;
+  try {
+    const r = await fetch('/api/request-refresh', { method: 'POST' });
+    if (!r.ok) return;
+    const body = await r.json();
+    _refreshRequestedAt = body.requestedAt || Date.now();
+    _setRefreshBtn('loading');
+    _startRefreshPoll();
+  } catch(e) { console.error(e); }
+}
+
 // ── Bootstrap ─────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
   Chart.defaults.color       = '#64748b';

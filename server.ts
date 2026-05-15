@@ -7,6 +7,10 @@ const RELOAD_TOK  = process.env.RELOAD_TOKEN       || 'Picasso2026';
 const sessions  = new Set<string>();
 let storedData: unknown = null;
 
+let refreshPending      = false;
+let refreshRequestedAt: number | null = null;
+let lastRefreshedAt:    number | null = null;
+
 function token() {
   return Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2);
 }
@@ -42,7 +46,28 @@ Bun.serve({
       if ((req.headers.get('Authorization') || '') !== `Bearer ${RELOAD_TOK}`)
         return new Response('Unauthorized', { status: 401 });
       storedData = await req.json();
+      refreshPending   = false;
+      lastRefreshedAt  = Date.now();
       return Response.json({ ok: true });
+    }
+
+    if (pathname === '/api/request-refresh' && req.method === 'POST') {
+      const s = sessionOf(req);
+      if (!s || !sessions.has(s)) return new Response('Unauthorized', { status: 401 });
+      if (!refreshPending) { refreshPending = true; refreshRequestedAt = Date.now(); }
+      return Response.json({ ok: true, requestedAt: refreshRequestedAt });
+    }
+
+    if (pathname === '/api/refresh-pending' && req.method === 'GET') {
+      if ((req.headers.get('Authorization') || '') !== `Bearer ${RELOAD_TOK}`)
+        return new Response('Unauthorized', { status: 401 });
+      return Response.json({ pending: refreshPending, requestedAt: refreshRequestedAt });
+    }
+
+    if (pathname === '/api/refresh-state' && req.method === 'GET') {
+      const s = sessionOf(req);
+      if (!s || !sessions.has(s)) return new Response('Unauthorized', { status: 401 });
+      return Response.json({ pending: refreshPending, requestedAt: refreshRequestedAt, lastRefreshedAt });
     }
 
     if (pathname === '/api/login' && req.method === 'POST') {
