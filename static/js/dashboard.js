@@ -760,42 +760,32 @@ function renderFiscal(d) {
   if (!d.fiscal) return;
   const fs   = d.fiscal;
   const xFmt = lbl => lbl;
-  const yrs  = fs.acum_years || [];
+  const fmtB = v => v.toFixed(1) + ' B';
 
-  // ── Gráficos acumulados (multi-año, eje X = meses) ──────────────────────────
+  const _fiscal2 = (actual, prog, ci_a, ci_p) => [
+    ld('Actual',   actual, ci_a, {w:2.5}),
+    ld('Programa', prog,   ci_p, {w:1.5, dash:[5,3]}),
+  ];
+
   mkChart('c-fiscal-prim-acum', {type:'line', _xFmt:xFmt, data:{
-    labels: MON,
-    datasets: _acumDatasets(fs.acum_prim, yrs),
-  }, options: baseOpts({yFmt:fmtBil, xFmt})});
+    labels: fs.dates,
+    datasets: _fiscal2(fs.acum_prim_actual, fs.acum_prim_prog, 0, 4),
+  }, options: baseOpts({yFmt:fmtB, xFmt})});
 
   mkChart('c-fiscal-ing-acum', {type:'line', _xFmt:xFmt, data:{
-    labels: MON,
-    datasets: _acumDatasets(fs.acum_ing, yrs),
-  }, options: baseOpts({yFmt:fmtBil, xFmt})});
+    labels: fs.dates,
+    datasets: _fiscal2(fs.acum_ing_actual, fs.acum_ing_prog, 1, 7),
+  }, options: baseOpts({yFmt:fmtB, xFmt})});
 
   mkChart('c-fiscal-gas-acum', {type:'line', _xFmt:xFmt, data:{
-    labels: MON,
-    datasets: _acumDatasets(fs.acum_gas, yrs),
-  }, options: baseOpts({yFmt:fmtBil, xFmt})});
+    labels: fs.dates,
+    datasets: _fiscal2(fs.acum_gas_actual, fs.acum_gas_prog, 8, 2),
+  }, options: baseOpts({yFmt:fmtB, xFmt})});
 
   mkChart('c-fiscal-fin-acum', {type:'line', _xFmt:xFmt, data:{
-    labels: MON,
-    datasets: _acumDatasets(fs.acum_fin, yrs),
-  }, options: baseOpts({yFmt:fmtBil, xFmt})});
-
-  // ── Gráficos anuales (barra / línea) ─────────────────────────────────────────
-  mkChart('c-fiscal-prim', {type:'bar', _xFmt:xFmt, data:{labels:fs.dates, datasets:[
-    bd('Resultado Primario % PIB', fs.r_primario_pib, 0, {signed:true}),
-  ]}, options: baseOpts({pct:true, xFmt})});
-
-  mkChart('c-fiscal-fin', {type:'bar', _xFmt:xFmt, data:{labels:fs.dates, datasets:[
-    bd('Resultado Financiero % PIB', fs.r_fin_pib, 0, {signed:true}),
-  ]}, options: baseOpts({pct:true, xFmt})});
-
-  mkChart('c-fiscal-inggas', {type:'line', _xFmt:xFmt, data:{labels:fs.dates, datasets:[
-    ld('Ingresos', fs.ingresos, 1, {w:2.5, area:true}),
-    ld('Gastos',   fs.gastos,   8, {w:2}),
-  ]}, options: baseOpts({yFmt:fmtBil, xFmt})});
+    labels: fs.dates,
+    datasets: _fiscal2(fs.acum_fin_actual, fs.acum_fin_prog, 0, 4),
+  }, options: baseOpts({yFmt:fmtB, xFmt})});
 }
 
 function renderInflacion(d) {
@@ -941,7 +931,6 @@ const CHART_TITLES = {
   'c-tcn':'TCN — MLC + Banda + ROFEX','c-tcr':'TCR Bilateral',
   'c-embi-argy':'EMBI Argentina y Global','c-embi-spread':'Spread Argy − Global','c-embi-lecap':'EMBI Argy vs LECAP',
   // Mensual
-  'c-fiscal-prim':'Resultado Primario','c-fiscal-fin':'Resultado Financiero','c-fiscal-inggas':'Ingresos y Gastos',
   'c-infla-mensual':'Inflación Mensual','c-infla-ia':'Inflación Interanual',
   'c-rem-infla':'REM — Inflación Mensual Esperada','c-rem-tcn':'REM — Tipo de Cambio Esperado',
   // Financiero
@@ -967,7 +956,6 @@ const CHART_SECTION = {
   'c-embi-argy':'embi','c-embi-spread':'embi','c-embi-lecap':'embi',
   'c-fiscal-prim-acum':'fiscal','c-fiscal-ing-acum':'fiscal',
   'c-fiscal-gas-acum':'fiscal','c-fiscal-fin-acum':'fiscal',
-  'c-fiscal-prim':'fiscal','c-fiscal-fin':'fiscal','c-fiscal-inggas':'fiscal',
   'c-infla-mensual':'inflacion','c-infla-ia':'inflacion',
   'c-rem-infla':'rem','c-rem-tcn':'rem',
   'c-cred-comp-m':'credito','c-cred-ia-m':'credito',
