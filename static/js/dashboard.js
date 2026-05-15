@@ -623,83 +623,84 @@ function renderLiquidez(d) {
 function renderTasasGraficos(d) {
   const t = d.tasas;
 
-  // Alinear MLC (TCN) a las fechas de TASAS para G6
+  // Alinear MLC (TCN) a fechas de TASAS para G12
   const mlcLookup = {};
   (d.tcn.dates||[]).forEach((dt, i) => { mlcLookup[dt] = (d.tcn.mlc||[])[i]; });
   const mlcAligned = (t.dates||[]).map(dt => mlcLookup[dt] ?? null);
 
   const pct0 = {yFmt: fmtPct0};
 
-  // G1: BONCAP 1 año (T15E7)
-  mkChart('c-t15e7', {type:'line', data:{labels:t.dates, datasets:[
-    ld('BONCAP 1 año', t.t15e7_tirea, 5, {w:2.5}),
+  // G1: LECAP 30d TIREA
+  mkChart('c-lecap', {type:'line', data:{labels:t.dates, datasets:[
+    ld('LECAP 30d', t.lecap_tirea, 0, {w:2.5}),
   ]}, options: baseOpts(pct0)});
 
-  // G2: Tasa Real
-  mkChart('c-tasa-real', {type:'line', data:{labels:t.dates, datasets:[
-    ld('Tasa Real (LECAP)', t.tasa_real, 2, {w:2.5, area:true}),
+  // G2: LECAP / Caución
+  mkChart('c-lecap-caucion', {type:'line', data:{labels:t.dates, datasets:[
+    ld('LECAP',   t.lecap_tirea, 0, {w:2.5}),
+    ld('Caución', t.caucion,     2, {w:2, dash:[3,2]}),
   ]}, options: baseOpts(pct0)});
 
-  // G3: Tasa de Arbitraje en Dolares
-  mkChart('c-tasa-dolar', {type:'line', data:{labels:t.dates, datasets:[
-    ld('Tasa de Arbitraje en Dolares', t.tasa_dolar, 0, {w:2.5, area:true}),
+  // G3: BONCAP 1.2 años TIREA
+  mkChart('c-boncap12', {type:'line', data:{labels:t.dates, datasets:[
+    ld('BONCAP 1.2a', t.boncap12_tirea, 5, {w:2.5}),
   ]}, options: baseOpts(pct0)});
 
-  // G4: Tasa Depreciacion
-  mkChart('c-depreciacion', {type:'line', data:{labels:t.dates, datasets:[
-    ld('Tasa Depreciacion', t.tasa_depreciacion, 4, {w:2.5}),
+  // G4: LECAP 30d & BONCAP 1.2 años
+  mkChart('c-lecap-boncap12', {type:'line', data:{labels:t.dates, datasets:[
+    ld('LECAP',       t.lecap_tirea,   0, {w:2.5}),
+    ld('BONCAP 1.2a', t.boncap12_tirea, 5, {w:2}),
   ]}, options: baseOpts(pct0)});
 
-  // G5: LECAP / BONCAP 1 año (T15E7)
-  mkChart('c-lecap-t15e7', {type:'line', data:{labels:t.dates, datasets:[
-    ld('LECAP',        t.lecap_tirea,  0, {w:2.5}),
-    ld('BONCAP 1 año', t.t15e7_tirea, 5, {w:2}),
-  ]}, options: baseOpts(pct0)});
-
-  // G6: Forward Implicito / MLC
-  mkChart('c-forward-mlc', {type:'line', data:{labels:t.dates, datasets:[
-    ld('Forward Implicito', t.forward,  0, {w:2.5}),
-    ld('MLC (TC Oficial)',  mlcAligned, 3, {w:2, dash:[3,2]}),
-  ]}, options: baseOpts({yFmt: fmtNum})});
-
-  // G7: TZX27 / TZX28
-  mkChart('c-tzx2728', {type:'line', data:{labels:t.dates, datasets:[
+  // G5: CER TZX27 / TZX28
+  mkChart('c-cer-tzx', {type:'line', data:{labels:t.dates, datasets:[
     ld('TZX27', t.tzx27_tirea, 5, {w:2.5}),
     ld('TZX28', t.tzx28_tirea, 9, {w:2}),
   ]}, options: baseOpts(pct0)});
 
-  // G8: LECAP
-  mkChart('c-lecap', {type:'line', data:{labels:t.dates, datasets:[
-    ld('LECAP', t.lecap_tirea, 0, {w:2.5}),
+  // G6: Break-Even Inflación
+  mkChart('c-break-even', {type:'line', data:{labels:t.dates, datasets:[
+    ld('B-E Infla 12M',  t.be_infla_12m,  3, {w:2.5}),
+    ld('B-E Infla 2026', t.be_infla_2026, 4, {w:2, dash:[5,3]}),
   ]}, options: baseOpts(pct0)});
 
-  // G9: Caucion
-  mkChart('c-caucion', {type:'line', data:{labels:t.dates, datasets:[
-    ld('Caucion', t.caucion, 2, {w:2.5}),
+  // G7: Tasa Real
+  mkChart('c-tasa-real', {type:'line', data:{labels:t.dates, datasets:[
+    ld('Tasa Real', t.tasa_real, 2, {w:2.5, area:true}),
   ]}, options: baseOpts(pct0)});
 
-  // G10: Dollar-Linked
-  mkChart('c-tasas-dl-t', {type:'line', data:{labels:t.dates, datasets:[
+  // G8: Tasa de Arbitraje en Dólares
+  mkChart('c-tasa-dolar', {type:'line', data:{labels:t.dates, datasets:[
+    ld('Tasa en USD', t.tasa_dolar, 0, {w:2.5, area:true}),
+  ]}, options: baseOpts(pct0)});
+
+  // G9: Dollar-Linked
+  mkChart('c-dl-tirea', {type:'line', data:{labels:t.dates, datasets:[
     ld('DL Corto', t.dl_corto_tirea, 3, {w:2.5}),
     ld('DL Largo', t.dl_largo_tirea, 4, {w:2}),
   ]}, options: baseOpts(pct0)});
 
-  // G11: LECAP / Caucion
-  mkChart('c-lecap-caucion', {type:'line', data:{labels:t.dates, datasets:[
-    ld('LECAP',   t.lecap_tirea, 0, {w:2.5}),
-    ld('Caucion', t.caucion,     2, {w:2, dash:[3,2]}),
-  ]}, options: baseOpts(pct0)});
-
-  // G12: Hard Dollar
-  mkChart('c-tasas-hd-t', {type:'line', data:{labels:t.dates, datasets:[
+  // G10: Hard Dollar
+  mkChart('c-hd-tirea', {type:'line', data:{labels:t.dates, datasets:[
     ld('HD Corto', t.hd_corto_tirea, 0, {w:2.5}),
     ld('HD Largo', t.hd_largo_tirea, 6, {w:2}),
   ]}, options: baseOpts(pct0)});
 
-  // G13: Break-Even Inflacion
-  mkChart('c-break-even', {type:'line', data:{labels:t.dates, datasets:[
-    ld('B-E Infla 2026', t.be_infla_2026, 4, {w:2.5}),
-    ld('B-E Infla 12M',  t.be_infla_12m,  3, {w:2, dash:[5,3]}),
+  // G11: Depreciación Esperada
+  mkChart('c-depreciacion', {type:'line', data:{labels:t.dates, datasets:[
+    ld('Depreciación', t.depreciacion, 4, {w:2.5}),
+  ]}, options: baseOpts(pct0)});
+
+  // G12: Spot vs Forward Implícito 12M
+  mkChart('c-forward-mlc', {type:'line', data:{labels:t.dates, datasets:[
+    ld('Forward Implícito', t.forward,  0, {w:2.5}),
+    ld('MLC (TC Oficial)',  mlcAligned, 3, {w:2, dash:[3,2]}),
+  ]}, options: baseOpts({yFmt: fmtNum})});
+
+  // G13: Break-Even Inflación vs Depreciación Esperada
+  mkChart('c-depre-be', {type:'line', data:{labels:t.dates, datasets:[
+    ld('B-E Infla 12M', t.be_infla_12m, 3, {w:2.5}),
+    ld('Depreciación',  t.depreciacion, 4, {w:2, dash:[5,3]}),
   ]}, options: baseOpts(pct0)});
 }
 
@@ -1138,10 +1139,13 @@ const CHART_TITLES = {
   'c-fe-diario':'FE — Variación Diaria','c-fe-pasivos':'FE — Acumulado por Componente','c-fe-acum':'FE — Acumulado en el Año',
   'c-liq-1':'BM + REPO + Letras — Corredor','c-liq-9':'Var. Acumulada: BM, REPO y Venc.',
   'c-m2t':'M2 Transaccional Privado','c-m3':'M3 Total','c-m3-mult':'Multiplicador M3',
-  'c-lecap':'LECAP','c-lecap-caucion':'LECAP / Caución','c-caucion':'Caución','c-t15e7':'BONCAP 1 año',
-  'c-lecap-t15e7':'LECAP / BONCAP 1 año','c-tasa-real':'Tasa Real Implícita','c-tasa-dolar':'Tasa de Arbitraje en Dólares',
-  'c-depreciacion':'Tasa Depreciación','c-tzx2728':'Tasas CER (TZX27/28)','c-break-even':'Breakeven Inflación',
-  'c-tasas-dl-t':'Dollar-Linked','c-tasas-hd-t':'Hard Dollar','c-forward-mlc':'Forward Implícito / MLC',
+  'c-lecap':'LECAP 30d','c-lecap-caucion':'LECAP / Caución',
+  'c-boncap12':'BONCAP 1.2 años','c-lecap-boncap12':'LECAP 30d & BONCAP 1.2 años',
+  'c-cer-tzx':'Tasas CER (TZX27/28)','c-break-even':'Break-Even Inflación',
+  'c-tasa-real':'Tasa Real de Interés','c-tasa-dolar':'Tasa de Arbitraje en Dólares',
+  'c-dl-tirea':'Dollar-Linked','c-hd-tirea':'Hard Dollar',
+  'c-depreciacion':'Depreciación Esperada','c-forward-mlc':'Spot vs Forward Implícito 12M',
+  'c-depre-be':'Break-Even Inflación vs Depreciación Esperada',
   'c-tcn':'TCN — MLC + Banda + ROFEX','c-tcr':'TCR Bilateral',
   'c-embi-argy':'EMBI Argentina y Global','c-embi-spread':'Spread Argy − Global','c-embi-lecap':'EMBI Argy vs LECAP',
   // Mensual
@@ -1162,10 +1166,12 @@ const CHART_SECTION = {
   'c-fe-diario':'fe-bm','c-fe-pasivos':'fe-bm','c-fe-acum':'fe-bm',
   'c-liq-1':'liquidez','c-liq-9':'liquidez',
   'c-m2t':'monetarios','c-m3':'monetarios','c-m3-mult':'monetarios',
-  'c-lecap':'tasas','c-lecap-caucion':'tasas','c-caucion':'tasas','c-t15e7':'tasas',
-  'c-lecap-t15e7':'tasas','c-tasa-real':'tasas','c-tasa-dolar':'tasas','c-depreciacion':'tasas',
-  'c-tzx2728':'tasas','c-break-even':'tasas','c-tasas-dl-t':'tasas','c-tasas-hd-t':'tasas',
-  'c-forward-mlc':'tasas',
+  'c-lecap':'tasas','c-lecap-caucion':'tasas',
+  'c-boncap12':'tasas','c-lecap-boncap12':'tasas',
+  'c-cer-tzx':'tasas','c-break-even':'tasas',
+  'c-tasa-real':'tasas','c-tasa-dolar':'tasas',
+  'c-dl-tirea':'tasas','c-hd-tirea':'tasas',
+  'c-depreciacion':'tasas','c-forward-mlc':'tasas','c-depre-be':'tasas',
   'c-tcn':'tcn','c-tcr':'tcn',
   'c-embi-argy':'embi','c-embi-spread':'embi','c-embi-lecap':'embi',
   'c-fiscal-prim-acum':'fiscal','c-fiscal-ing-acum':'fiscal',

@@ -281,21 +281,26 @@
     <!-- 6 · TASAS -->
     <section id="section-tasas" class="tab-section">
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <!-- FILA 1: LECAP | LECAP / Caución -->
-        <div class="card"><div class="card-title">LECAP<span class="card-sub">% TIREA</span></div><canvas id="c-lecap" height="110"></canvas></div>
-        <div class="card"><div class="card-title">LECAP / Caución<span class="card-sub">% TIREA</span></div><canvas id="c-lecap-caucion" height="110"></canvas></div>
-        <!-- FILA 2: BONCAP 1 ano | LECAP / BONCAP 1 ano -->
-        <div class="card"><div class="card-title">BONCAP 1 ano<span class="card-sub">% TIREA</span></div><canvas id="c-t15e7" height="110"></canvas></div>
-        <div class="card"><div class="card-title">LECAP / BONCAP 1 ano<span class="card-sub">% TIREA</span></div><canvas id="c-lecap-t15e7" height="110"></canvas></div>
-        <!-- FILA 3: Tasa Real | Tasa de Arbitraje en Dolares -->
-        <div class="card"><div class="card-title">Tasa Real Implicita LECAP<span class="card-sub">%</span></div><canvas id="c-tasa-real" height="110"></canvas></div>
-        <div class="card"><div class="card-title">Tasa de Arbitraje en Dolares<span class="card-sub">%</span></div><canvas id="c-tasa-dolar" height="110"></canvas></div>
-        <!-- FILA 4: CER TZX27/TZX28 | Breakeven -->
-        <div class="card"><div class="card-title">Tasas de Interes CER<span class="card-sub">TZX27 y TZX28 — % TIREA</span></div><canvas id="c-tzx2728" height="110"></canvas></div>
-        <div class="card"><div class="card-title">Breakeven Inflacion<span class="card-sub">%</span></div><canvas id="c-break-even" height="110"></canvas></div>
-        <!-- FILA 5: Dollar-Linked | Hard Dollar -->
-        <div class="card"><div class="card-title">Dollar-Linked<span class="card-sub">% TIREA</span></div><canvas id="c-tasas-dl-t" height="110"></canvas></div>
-        <div class="card"><div class="card-title">Hard Dollar<span class="card-sub">% TIREA</span></div><canvas id="c-tasas-hd-t" height="110"></canvas></div>
+        <!-- G1 | G2 -->
+        <div class="card"><div class="card-title">Tasa de Interés $ — LECAP 30 días<span class="card-sub">en % anual</span></div><canvas id="c-lecap" height="110"></canvas></div>
+        <div class="card"><div class="card-title">LECAP / Caución<span class="card-sub">en TIREA (%)</span></div><canvas id="c-lecap-caucion" height="110"></canvas></div>
+        <!-- G3 | G4 -->
+        <div class="card"><div class="card-title">Tasa de Interés $ — BONCAP 1.2 años<span class="card-sub">en TIREA (%)</span></div><canvas id="c-boncap12" height="110"></canvas></div>
+        <div class="card"><div class="card-title">Tasa de Interés $ — LECAP 30d &amp; BONCAP 1.2 años<span class="card-sub">en TIREA (%)</span></div><canvas id="c-lecap-boncap12" height="110"></canvas></div>
+        <!-- G5 | G6 -->
+        <div class="card"><div class="card-title">Tasa de Interés CER<span class="card-sub">TZX27 y TZX28 — en TIREA (%)</span></div><canvas id="c-cer-tzx" height="110"></canvas></div>
+        <div class="card"><div class="card-title">Break-Even Inflación<span class="card-sub">en % anual</span></div><canvas id="c-break-even" height="110"></canvas></div>
+        <!-- G7 | G8 -->
+        <div class="card"><div class="card-title">Tasa Real de Interés<span class="card-sub">ex-ante en % anual</span></div><canvas id="c-tasa-real" height="110"></canvas></div>
+        <div class="card"><div class="card-title">Tasa de Arbitraje en Dólares<span class="card-sub">ex-ante en % anual</span></div><canvas id="c-tasa-dolar" height="110"></canvas></div>
+        <!-- G9 | G10 -->
+        <div class="card"><div class="card-title">Tasa de Interés — Dollar Linked<span class="card-sub">en % anual</span></div><canvas id="c-dl-tirea" height="110"></canvas></div>
+        <div class="card"><div class="card-title">Tasa de Interés — Bonos Hard Dollar<span class="card-sub">en % anual</span></div><canvas id="c-hd-tirea" height="110"></canvas></div>
+        <!-- G11 | G12 -->
+        <div class="card"><div class="card-title">Depreciación Esperada<span class="card-sub">en % anual</span></div><canvas id="c-depreciacion" height="110"></canvas></div>
+        <div class="card"><div class="card-title">Spot vs Forward Implícito 12M<span class="card-sub">MULC $ x USD</span></div><canvas id="c-forward-mlc" height="110"></canvas></div>
+        <!-- G13 full width -->
+        <div class="card span2"><div class="card-title">Break-Even Inflación vs Depreciación Esperada<span class="card-sub">en % anual</span></div><canvas id="c-depre-be" height="110"></canvas></div>
       </div>
     </section>
 
@@ -695,6 +700,6 @@
   </div>
 </div>
 
-<script src="/static/js/dashboard.js?v=39"></script>
+<script src="/static/js/dashboard.js?v=40"></script>
 </body>
 </html>
